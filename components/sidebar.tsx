@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ArrowRightLeft,
   LayoutGrid,
+  Target,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -28,11 +29,9 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
-  { name: "Analytics", href: "/analytics", icon: BarChart2 },
   { name: "Wallets", href: "/wallets", icon: Wallet },
   { name: "Transactions", href: "/transactions", icon: ArrowRightLeft },
-  { name: "Invoices", href: "/invoices", icon: Receipt },
-  { name: "Payments", href: "/payments", icon: CreditCard },
+  { name: "Goals", href: "/goals", icon: Target },
   { name: "Categories", href: "/categories", icon: LayoutGrid },
 ]
 

@@ -24,7 +24,20 @@ export interface Wallet {
 }
 
 export function WalletsPage() {
-  const [wallets, setWallets] = useState<Wallet[]>([])
+  const [wallets, setWallets] = useState<Wallet[]>(() => {
+    if (typeof window === 'undefined') {
+      return [];
+    }
+    try {
+      const storedWallets = localStorage.getItem("wallets");
+      if (storedWallets) {
+        return JSON.parse(storedWallets).map((w: any) => ({ ...w, id: String(w.id) }));
+      }
+    } catch (error) {
+      console.error("Failed to parse wallets from localStorage on init", error);
+    }
+    return [];
+  });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -32,20 +45,8 @@ export function WalletsPage() {
   const [walletToDelete, setWalletToDelete] = useState<Wallet | null>(null)
 
   useEffect(() => {
-    try {
-      const storedWallets = localStorage.getItem("wallets")
-      if (storedWallets) {
-        const parsedWallets = JSON.parse(storedWallets).map((w: any) => ({ ...w, id: String(w.id) }))
-        setWallets(parsedWallets)
-      }
-    } catch (error) {
-      console.error("Failed to parse wallets from localStorage", error)
-    }
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem("wallets", JSON.stringify(wallets))
-  }, [wallets])
+    localStorage.setItem("wallets", JSON.stringify(wallets));
+  }, [wallets]);
 
 
   const handleAddWallet = (data: WalletFormValues) => {

@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Transaction } from "./transactions-page"
 import { Wallet } from "./wallets-page"
 import { Category } from "./categories-page"
@@ -28,7 +27,14 @@ const getCategoryName = (categoryId: string | undefined, categories: Category[])
   return category?.name || "N/A"
 }
 
-export const columns: ColumnDef<Transaction>[] = [
+// This type is used to define the shape of our data.
+// You can use a Zod schema here if you want.
+export type TransactionRow = Transaction & {
+  onEdit: (transaction: Transaction) => void
+  onDelete: (transaction: Transaction) => void
+}
+
+export const columns: ColumnDef<TransactionRow>[] = [
   {
     accessorKey: "description",
     header: "Description",
@@ -102,13 +108,17 @@ export const columns: ColumnDef<Transaction>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(transaction.id)}
+              onClick={() => transaction.onEdit(transaction)}
             >
-              Copy transaction ID
+              Edit
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Edit</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+            <DropdownMenuItem 
+                onClick={() => transaction.onDelete(transaction)}
+                className="text-red-600"
+            >
+                Delete
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
