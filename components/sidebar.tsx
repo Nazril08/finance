@@ -20,6 +20,7 @@ import {
   Menu,
   ChevronLeft,
   ArrowRightLeft,
+  LayoutGrid,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ const navigation = [
   { name: "Transactions", href: "/transactions", icon: ArrowRightLeft },
   { name: "Invoices", href: "/invoices", icon: Receipt },
   { name: "Payments", href: "/payments", icon: CreditCard },
+  { name: "Categories", href: "/categories", icon: LayoutGrid },
 ]
 
 const bottomNavigation = [

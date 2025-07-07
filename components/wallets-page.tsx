@@ -1,156 +1,188 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, MoreVertical, Edit, Trash2 } from "lucide-react"
-import Image from "next/image"
-import { AddWalletModal, WalletFormValues as AddWalletFormValues } from "./add-wallet-modal"
-import { EditWalletModal, WalletFormValues as EditWalletFormValues } from "./edit-wallet-modal"
-import { DeleteWalletDialog } from "./delete-wallet-dialog"
+import { AddWalletModal, WalletFormValues } from "@/components/add-wallet-modal"
+import { EditWalletModal } from "@/components/edit-wallet-modal"
+import { DeleteWalletDialog } from "@/components/delete-wallet-dialog"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { WalletIcon, MoreHorizontal } from "lucide-react"
 
-type Wallet = {
-  id: number
-  name: string
-  balance: number
-  image?: string | null
+export interface Wallet {
+  id: string;
+  name: string;
+  balance: number;
+  image?: string | null;
 }
-
-type Transaction = {
-  id: number
-  walletId: number
-}
-
-const WALLETS_STORAGE_KEY = "my-wallets"
-const TRANSACTIONS_STORAGE_KEY = "my-transactions"
-
-const initialWallets: Wallet[] = [
-  { id: 1, name: "BCA", balance: 5000000, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Bank_Central_Asia_logo.svg/2560px-Bank_Central_Asia_logo.svg.png" },
-  { id: 2, name: "GoPay", balance: 750000, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Gopay_logo.svg/2560px-Gopay_logo.svg.png" },
-  { id: 3, name: "OVO", balance: 250000, image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Logo_ovo_purple.svg/2560px-Logo_ovo_purple.svg.png" },
-]
 
 export function WalletsPage() {
   const [wallets, setWallets] = useState<Wallet[]>([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [walletToEdit, setWalletToEdit] = useState<Wallet | null>(null)
+  const [walletToDelete, setWalletToDelete] = useState<Wallet | null>(null)
 
   useEffect(() => {
-    const savedWallets = localStorage.getItem(WALLETS_STORAGE_KEY)
-    if (savedWallets && savedWallets !== "[]") {
-      setWallets(JSON.parse(savedWallets))
-    } else {
-      setWallets(initialWallets)
+    try {
+      const storedWallets = localStorage.getItem("wallets")
+      if (storedWallets) {
+        const parsedWallets = JSON.parse(storedWallets).map((w: any) => ({ ...w, id: String(w.id) }))
+        setWallets(parsedWallets)
+      }
+    } catch (error) {
+      console.error("Failed to parse wallets from localStorage", error)
     }
-    setIsLoaded(true)
   }, [])
 
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem(WALLETS_STORAGE_KEY, JSON.stringify(wallets))
-    }
-  }, [wallets, isLoaded])
+    localStorage.setItem("wallets", JSON.stringify(wallets))
+  }, [wallets])
 
-  const handleAddWallet = (data: AddWalletFormValues) => {
+
+  const handleAddWallet = (data: WalletFormValues) => {
     const newWallet: Wallet = {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       name: data.name,
       balance: data.balance,
-      image: data.image,
+      image: data.image as string | null,
     }
     setWallets((prev) => [...prev, newWallet])
   }
-  
-  const handleUpdateWallet = (data: EditWalletFormValues) => {
-    if (!selectedWallet) return
-    setWallets(wallets.map(w => w.id === selectedWallet.id ? { ...w, ...data } : w))
+
+  const handleUpdateWallet = (updatedWallet: Wallet) => {
+    setWallets(wallets.map((wallet) =>
+      wallet.id === updatedWallet.id ? updatedWallet : wallet
+    ))
+    
+    try {
+        const storedTransactions = localStorage.getItem("transactions")
+        if (storedTransactions) {
+          let transactions = JSON.parse(storedTransactions)
+          transactions = transactions.map((t: any) => {
+            if (t.walletId === updatedWallet.id) {
+              return { ...t, walletName: updatedWallet.name }
+            }
+            return t
+          })
+          localStorage.setItem("transactions", JSON.stringify(transactions))
+        }
+    } catch (error) {
+        console.error("Failed to update transactions in localStorage", error);
+    }
   }
 
   const handleDeleteWallet = () => {
-    if (!selectedWallet) return
-    
-    const savedTransactions = localStorage.getItem(TRANSACTIONS_STORAGE_KEY)
-    if (savedTransactions) {
-      let transactions: Transaction[] = JSON.parse(savedTransactions)
-      transactions = transactions.filter(t => t.walletId !== selectedWallet.id)
-      localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(transactions))
-    }
+    if (!walletToDelete) return
 
-    setWallets(wallets.filter(w => w.id !== selectedWallet.id))
+    try {
+        const storedTransactions = localStorage.getItem("transactions")
+        if (storedTransactions) {
+            const transactions = JSON.parse(storedTransactions)
+            const updatedTransactions = transactions.filter((t: any) => t.walletId !== walletToDelete.id)
+            localStorage.setItem("transactions", JSON.stringify(updatedTransactions))
+        }
+    } catch (error) {
+        console.error("Failed to update transactions in localStorage", error);
+    }
+    
+    setWallets(wallets.filter((wallet) => wallet.id !== walletToDelete.id))
     setIsDeleteDialogOpen(false)
-    setSelectedWallet(null)
+    setWalletToDelete(null)
   }
 
   return (
-    <>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold tracking-tight">My Wallets</h1>
-          <Button onClick={() => setIsAddModalOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Wallet
-          </Button>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {wallets.map((wallet) => (
-            <Card key={wallet.id}>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{wallet.name}</CardTitle>
-                <div className="flex items-center gap-2">
-                  {wallet.image && <Image src={wallet.image} alt={wallet.name} width={40} height={40} className="rounded-md object-contain" />}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => { setSelectedWallet(wallet); setIsEditModalOpen(true); }}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        <span>Edit</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setSelectedWallet(wallet); setIsDeleteDialogOpen(true); }} className="text-red-600">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Delete</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  Rp{wallet.balance.toLocaleString("id-ID")}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">My Wallets</h1>
+        <Button onClick={() => setIsAddModalOpen(true)}>Add Wallet</Button>
       </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {wallets.map((wallet) => (
+          <Card key={wallet.id} className="overflow-hidden">
+            <div className="h-40 bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+              {wallet.image ? (
+                <img src={wallet.image} alt={wallet.name} className="h-full w-full object-cover" />
+              ) : (
+                <WalletIcon className="h-16 w-16 text-gray-400" />
+              )}
+            </div>
+            <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle className="text-lg font-semibold">{wallet.name}</CardTitle>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(wallet.balance)}
+                        </p>
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem
+                                onClick={() => {
+                                    setWalletToEdit(wallet)
+                                    setIsEditModalOpen(true)
+                                }}
+                            >
+                                Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                onClick={() => {
+                                    setWalletToDelete(wallet)
+                                    setIsDeleteDialogOpen(true)
+                                }}
+                                className="text-red-600"
+                            >
+                                Delete
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       <AddWalletModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddWallet={handleAddWallet}
       />
+      
       <EditWalletModal
         isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+        onClose={() => {
+          setIsEditModalOpen(false)
+          setWalletToEdit(null)
+        }}
+        wallet={walletToEdit}
         onUpdateWallet={handleUpdateWallet}
-        wallet={selectedWallet}
       />
+      
       <DeleteWalletDialog
         isOpen={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
+        onClose={() => {
+          setIsDeleteDialogOpen(false)
+          setWalletToDelete(null)
+        }}
         onConfirm={handleDeleteWallet}
       />
-    </>
+    </div>
   )
 } 

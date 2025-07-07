@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
+import { Wallet } from "@/components/wallets-page"
 
 const walletFormSchema = z.object({
   name: z.string().min(2, "Wallet name must be at least 2 characters."),
@@ -35,8 +36,8 @@ export type WalletFormValues = z.infer<typeof walletFormSchema>
 interface EditWalletModalProps {
   isOpen: boolean
   onClose: () => void
-  onUpdateWallet: (values: WalletFormValues) => void
-  wallet: { id: number; name: string; balance: number; image?: string | null } | null
+  onUpdateWallet: (values: Wallet) => void
+  wallet: Wallet | null
 }
 
 export function EditWalletModal({ isOpen, onClose, onUpdateWallet, wallet }: EditWalletModalProps) {
@@ -67,7 +68,8 @@ export function EditWalletModal({ isOpen, onClose, onUpdateWallet, wallet }: Edi
   }
 
   function onSubmit(data: WalletFormValues) {
-    onUpdateWallet({ ...data, image: preview })
+    if (!wallet) return;
+    onUpdateWallet({ ...wallet, ...data, image: preview })
     onClose()
   }
 
